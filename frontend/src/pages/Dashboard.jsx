@@ -77,19 +77,19 @@ export default function Dashboard() {
   const botStatus = summary?.bot_status || {}
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Top Banner / Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+      <div className="flex flex-col justify-between gap-3 border-b border-slate-800 pb-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Swing Trading Dashboard</h1>
-          <p className="text-sm text-slate-400">Automated paper trade strategy verification & tracking</p>
+          <h1 className="text-xl font-bold tracking-tight text-slate-100">Swing Trading Dashboard</h1>
+          <p className="text-xs text-slate-400">Automated paper trade strategy verification & tracking</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Bot Status Indicator */}
-          <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs">
+          <div className="flex items-center gap-2 rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs">
             <Radio
-              className={`h-4 w-4 ${botStatus.running ? 'animate-pulse text-emerald-400' : 'text-slate-500'}`}
+              className={`h-3.5 w-3.5 ${botStatus.running ? 'animate-pulse text-emerald-400' : 'text-slate-500'}`}
             />
             <span className="text-slate-300">
               Bot: <strong className={botStatus.running ? 'text-emerald-400' : 'text-slate-400'}>
@@ -101,7 +101,7 @@ export default function Dashboard() {
           <button
             onClick={handleManualRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-blue-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             <span>{refreshing ? 'Refreshing...' : 'Refresh Prices'}</span>
@@ -110,14 +110,14 @@ export default function Dashboard() {
       </div>
 
       {error && (
-        <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs p-4 rounded-xl flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div className="flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-400">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
         <KPICard
           title="Active Trades"
           value={summary?.active_count ?? 0}

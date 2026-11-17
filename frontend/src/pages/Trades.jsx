@@ -39,35 +39,35 @@ export default function Trades() {
   const sectors = Array.from(new Set(trades.map((t) => t.sector).filter(Boolean))).sort()
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">All Trades</h1>
-          <p className="text-sm text-slate-400">Complete log of active and historical swing opportunities</p>
+          <h1 className="text-xl font-bold tracking-tight text-slate-100">All Trades</h1>
+          <p className="text-xs text-slate-400">Complete log of active and historical swing opportunities</p>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-700/60 bg-slate-800 p-4 shadow-xs">
+      <div className="flex flex-wrap items-center gap-2.5 rounded-xl border border-slate-700/60 bg-slate-800 p-3 shadow-xs">
         {/* Search */}
-        <div className="relative min-w-[200px] flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <div className="relative min-w-[180px] flex-1">
+          <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search symbol (e.g. CYIENT)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pr-3 pl-9 text-sm text-slate-200 placeholder-slate-500 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
+            className="w-full rounded-lg border border-slate-700 bg-slate-900 py-1.5 pr-3 pl-8.5 text-xs text-slate-200 placeholder-slate-500 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
           />
         </div>
 
         {/* Status Filter */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
+            className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-200 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="ACTIVE">Active Only</option>
@@ -76,11 +76,11 @@ export default function Trades() {
         </div>
 
         {/* Sector Filter */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <select
             value={sectorFilter}
             onChange={(e) => setSectorFilter(e.target.value)}
-            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
+            className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-200 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
           >
             <option value="">All Sectors</option>
             {sectors.map((sec) => (

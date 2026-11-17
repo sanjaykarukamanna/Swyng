@@ -14,7 +14,7 @@ export default function SectorBreakdown({ sectors = [] }) {
   }))
 
   return (
-    <div className="w-full rounded-xl border border-slate-700/60 bg-slate-800 p-5 shadow-xs">
+    <div className="w-full rounded-xl border border-slate-700/60 bg-slate-800 p-4 shadow-xs">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-slate-200">Sector Allocation & Performance</h3>
         <p className="text-xs text-slate-400">Distribution of trade candidates across industry sectors</p>

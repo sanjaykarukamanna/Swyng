@@ -59,17 +59,17 @@ export default function Analytics() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="pb-2 border-b border-slate-800">
-        <h1 className="text-2xl font-bold text-slate-100">Strategy Analytics</h1>
-        <p className="text-sm text-slate-400">
+        <h1 className="text-xl font-bold tracking-tight text-slate-100">Strategy Analytics</h1>
+        <p className="text-xs text-slate-400">
           Risk-adjusted performance, edge expectancy, and win-rate analysis for swing setups
         </p>
       </div>
 
       {/* Analytics KPI Row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KPICard
           title="Win Rate"
           value={`${(summary?.win_rate ?? 0).toFixed(1)}%`}
@@ -115,7 +115,7 @@ export default function Analytics() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RMultipleChart data={rMultiples} />
         <EquityCurve data={returns} />
       </div>

@@ -12,24 +12,24 @@ export default function KPICard({ title, value, subtitle, icon: Icon, trend, col
   const iconClasses = colorMap[color] || colorMap.blue
 
   return (
-    <div className="rounded-xl border border-slate-700/60 bg-slate-800 p-5 shadow-xs transition-colors hover:border-slate-600/80">
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</span>
+    <div className="rounded-lg border border-slate-700/60 bg-slate-800/90 p-3.5 shadow-xs transition-colors hover:border-slate-600/80">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{title}</span>
         {Icon && (
-          <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${iconClasses}`}>
-            <Icon className="h-4 w-4" />
+          <div className={`flex h-6.5 w-6.5 items-center justify-center rounded-md border ${iconClasses}`}>
+            <Icon className="h-3.5 w-3.5" />
           </div>
         )}
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold tracking-tight text-slate-100">{value}</span>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-xl font-bold tracking-tight text-slate-100">{value}</span>
         {trend && (
-          <span className={`text-xs font-semibold ${trend > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <span className={`text-[11px] font-semibold ${trend > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {trend > 0 ? `+${trend}%` : `${trend}%`}
           </span>
         )}
       </div>
-      {subtitle && <p className="mt-1.5 text-xs text-slate-400">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-[11px] text-slate-500">{subtitle}</p>}
     </div>
   )
 }
