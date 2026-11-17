@@ -11,15 +11,12 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.database import get_db
 from app.models import (
-    CloseTradeRequest,
     DashboardResponse,
-    TradeDetailResponse,
     TradeResponse,
     TradeWithPrice,
     compute_trade_metrics,
 )
 from app.telegram_bot import get_bot_status, process_digest_text
-from app.yahoo_finance import fetch_price
 from app import analytics
 
 logger = logging.getLogger(__name__)
@@ -192,103 +189,6 @@ async def get_dashboard():
         expectancy=summary.get("expectancy", 0.0),
         bot_status=get_bot_status(),
     )
-
-
-@router.get("/{trade_id}", response_model=TradeDetailResponse)
-async def get_trade(trade_id: int):
-    """Get a single trade with its price snapshots."""
-    db = await get_db()
-
-    cursor = await db.execute("SELECT * FROM trades WHERE id = ?", (trade_id,))
-    row = await cursor.fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Trade not found")
-
-    trade = _row_to_dict(row)
-
-    # Price snapshots
-    cursor = await db.execute(
-        "SELECT id, trade_id, symbol, price, timestamp FROM price_snapshots WHERE trade_id = ? ORDER BY timestamp ASC",
-        (trade_id,),
-    )
-    snapshots = await cursor.fetchall()
-    trade["price_snapshots"] = [_row_to_dict(s) for s in snapshots]
-
-    # Current price from latest snapshot
-    if trade["price_snapshots"]:
-        latest = trade["price_snapshots"][-1]
-        current_price = latest.get("price")
-    else:
-        current_price = trade.get("price_at_signal") or trade.get("entry_price")
-
-    is_closed = trade.get("status") == "CLOSED"
-    effective_price = trade.get("close_price") if is_closed else current_price
-    trade["current_price"] = effective_price
-
-    metrics = compute_trade_metrics(
-        trade.get("entry_price"),
-        effective_price,
-        trade.get("stop_loss"),
-        trade.get("suggested_shares"),
-        trade.get("signal_date"),
-        trade.get("close_date"),
-    )
-    trade.update(metrics)
-    trade["unrealized_pnl"] = trade["pnl"]
-    trade["unrealized_pnl_pct"] = trade["pnl_pct"]
-
-    return trade
-
-
-@router.put("/{trade_id}/close")
-async def close_trade(trade_id: int, body: CloseTradeRequest):
-    """Close a trade."""
-    db = await get_db()
-
-    cursor = await db.execute("SELECT * FROM trades WHERE id = ?", (trade_id,))
-    row = await cursor.fetchone()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Trade not found")
-
-    trade = _row_to_dict(row)
-    if trade["status"] == "CLOSED":
-        raise HTTPException(status_code=400, detail="Trade is already closed")
-
-    close_price = body.close_price
-    if close_price is None:
-        # Fetch current price
-        try:
-            fetched = await fetch_price(trade["symbol"])
-            if fetched is not None:
-                close_price = fetched
-            else:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Could not fetch current price. Please provide close_price.",
-                )
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Error fetching price: {str(e)}. Please provide close_price.",
-            )
-
-    close_date = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-
-    await db.execute(
-        """UPDATE trades
-           SET status = 'CLOSED', close_price = ?, close_date = ?,
-               close_reason = ?, updated_at = datetime('now')
-           WHERE id = ?""",
-        (close_price, close_date, body.close_reason, trade_id),
-    )
-    await db.commit()
-
-    logger.info("Closed trade #%d (%s) at %.2f — reason: %s",
-                trade_id, trade["symbol"], close_price, body.close_reason)
-
-    return {"message": "Trade closed", "trade_id": trade_id, "close_price": close_price}
 
 
 @router.post("/ingest")

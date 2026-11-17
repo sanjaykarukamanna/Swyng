@@ -1,6 +1,5 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
-import { TrendingUp, TrendingDown, Target, Shield, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { Target, Shield, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import RatingBadge from './RatingBadge'
 import StatusBadge from './StatusBadge'
 import { formatCurrency, formatPercent, getPnlColor } from '../utils/formatters'
@@ -18,18 +17,13 @@ export default function TradeCard({ trade }) {
   const clampedR = Math.max(-1, Math.min(2.5, rMultiple))
   const progressPct = Math.round(((clampedR - (-1)) / (2 - (-1))) * 100)
 
-  const isProfitable = pnl >= 0
-
   return (
-    <Link
-      to={`/trades/${trade.id}`}
-      className="block bg-[#1e293b] border border-slate-700/70 hover:border-blue-500/50 rounded-xl p-5 transition-all hover:shadow-lg hover:shadow-blue-500/5 group"
-    >
+    <div className="bg-[#1e293b] border border-slate-700/70 rounded-xl p-5 shadow-sm">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-base font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
+            <h3 className="text-base font-bold text-slate-100">
               {trade.symbol}
             </h3>
             <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
@@ -105,6 +99,6 @@ export default function TradeCard({ trade }) {
           </span>
         )}
       </div>
-    </Link>
+    </div>
   )
 }

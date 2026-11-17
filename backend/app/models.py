@@ -111,15 +111,6 @@ class TradeWithPrice(TradeResponse):
     unrealized_pnl_pct: Optional[float] = None
 
 
-class TradeDetailResponse(TradeWithPrice):
-    price_snapshots: List[Dict[str, Any]] = Field(default_factory=list)
-
-
-class CloseTradeRequest(BaseModel):
-    close_reason: str
-    close_price: Optional[float] = None
-
-
 class DashboardResponse(BaseModel):
     active_count: int = 0
     closed_count: int = 0

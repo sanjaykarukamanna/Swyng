@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowUpDown, ChevronRight } from 'lucide-react'
+import { ArrowUpDown } from 'lucide-react'
 import RatingBadge from './RatingBadge'
 import StatusBadge from './StatusBadge'
 import { formatCurrency, formatPercent, formatDate, getPnlColor } from '../utils/formatters'
 
 export default function TradeTable({ trades = [] }) {
-  const navigate = useNavigate()
   const [sortField, setSortField] = useState('created_at')
   const [sortDirection, setSortDirection] = useState('desc')
 
@@ -70,7 +68,6 @@ export default function TradeTable({ trades = [] }) {
                 Date <ArrowUpDown className="w-3.5 h-3.5" />
               </div>
             </th>
-            <th className="py-3.5 px-4 text-center"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800/60 text-slate-200">
@@ -83,8 +80,7 @@ export default function TradeTable({ trades = [] }) {
             return (
               <tr
                 key={t.id}
-                onClick={() => navigate(`/trades/${t.id}`)}
-                className="hover:bg-slate-800/50 cursor-pointer transition-colors"
+                className="hover:bg-slate-800/40 transition-colors"
               >
                 <td className="py-3 px-4 font-semibold text-slate-100 whitespace-nowrap">
                   <div className="flex items-center gap-2">
@@ -123,9 +119,6 @@ export default function TradeTable({ trades = [] }) {
                 </td>
                 <td className="py-3 px-4 text-slate-400 text-xs whitespace-nowrap">
                   {formatDate(t.signal_date || t.created_at)}
-                </td>
-                <td className="py-3 px-4 text-right text-slate-500">
-                  <ChevronRight className="w-4 h-4 ml-auto" />
                 </td>
               </tr>
             )
