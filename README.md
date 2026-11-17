@@ -99,7 +99,33 @@ swing-trading-dashboard/
 
 ## Quick Start Guide
 
-### 1. Configure Environment Variables
+### Option A: Run with Docker Compose (Recommended)
+
+1. **Configure Environment Variables**:
+   Copy `.env.example` to `.env` in the root directory:
+   ```bash
+   cp .env.example .env
+   ```
+   Add your `TELEGRAM_BOT_TOKEN` and optional `TELEGRAM_CHAT_ID` to `.env`.
+
+2. **Start Both Services**:
+   ```bash
+   docker compose up --build -d
+   ```
+   - **Frontend Dashboard**: `http://localhost:3000` (Nginx reverse-proxying `/api` to the backend)
+   - **Backend API**: `http://localhost:8000` (Swagger docs at `/docs`)
+   - **Persistent Database**: Stored in `./data/swing_trades.db` on your machine
+
+3. **Stop Services**:
+   ```bash
+   docker compose down
+   ```
+
+---
+
+### Option B: Run Locally Without Docker
+
+#### 1. Configure Environment Variables
 
 Edit `backend/.env` (or copy from `.env.example`):
 ```env

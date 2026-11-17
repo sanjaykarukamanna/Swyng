@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 import aiosqlite
@@ -13,6 +14,9 @@ _db: Optional[aiosqlite.Connection] = None
 async def get_db() -> aiosqlite.Connection:
     global _db
     if _db is None:
+        db_dir = os.path.dirname(settings.database_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
         _db = await aiosqlite.connect(settings.database_path)
         _db.row_factory = aiosqlite.Row
         await _db.execute("PRAGMA journal_mode=WAL")

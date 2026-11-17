@@ -9,6 +9,7 @@ __pycache__/
 *.db-shm
 *.db-wal
 *.sqlite3
+data/
 
 # Environment
 .env
