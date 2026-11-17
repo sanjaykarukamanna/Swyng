@@ -49,16 +49,16 @@ export default function Trades() {
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-[#1e293b] p-4 rounded-xl border border-slate-700/60 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-700/60 bg-slate-800 p-4 shadow-xs">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search symbol (e.g. CYIENT)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pr-3 pl-9 text-sm text-slate-200 placeholder-slate-500 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
           />
         </div>
 
@@ -67,7 +67,7 @@ export default function Trades() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer"
+            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="ACTIVE">Active Only</option>
@@ -80,7 +80,7 @@ export default function Trades() {
           <select
             value={sectorFilter}
             onChange={(e) => setSectorFilter(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer"
+            className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus-visible:outline-none"
           >
             <option value="">All Sectors</option>
             {sectors.map((sec) => (

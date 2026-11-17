@@ -35,42 +35,42 @@ export default function TradeTable({ trades = [] }) {
   })
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-[#1e293b]">
-      <table className="w-full text-left border-collapse text-sm">
+    <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-slate-800 shadow-xs">
+      <table className="w-full border-collapse text-left text-sm">
         <thead>
-          <tr className="border-b border-slate-700 bg-slate-800/60 text-slate-400 text-xs font-semibold uppercase tracking-wider">
-            <th className="py-3.5 px-4 cursor-pointer hover:text-slate-200" onClick={() => handleSort('symbol')}>
+          <tr className="border-b border-slate-700 bg-slate-800/60 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <th className="cursor-pointer px-4 py-3.5 select-none hover:text-slate-200" onClick={() => handleSort('symbol')}>
               <div className="flex items-center gap-1.5">
-                Symbol <ArrowUpDown className="w-3.5 h-3.5" />
+                Symbol <ArrowUpDown className="h-3.5 w-3.5" />
               </div>
             </th>
-            <th className="py-3.5 px-4">Sector</th>
-            <th className="py-3.5 px-4 cursor-pointer hover:text-slate-200" onClick={() => handleSort('rating_score')}>
+            <th className="px-4 py-3.5">Sector</th>
+            <th className="cursor-pointer px-4 py-3.5 select-none hover:text-slate-200" onClick={() => handleSort('rating_score')}>
               <div className="flex items-center gap-1.5">
-                Rating <ArrowUpDown className="w-3.5 h-3.5" />
+                Rating <ArrowUpDown className="h-3.5 w-3.5" />
               </div>
             </th>
-            <th className="py-3.5 px-4 text-right cursor-pointer hover:text-slate-200" onClick={() => handleSort('entry_price')}>
+            <th className="cursor-pointer px-4 py-3.5 text-right select-none hover:text-slate-200" onClick={() => handleSort('entry_price')}>
               <div className="flex items-center justify-end gap-1.5">
-                Entry <ArrowUpDown className="w-3.5 h-3.5" />
+                Entry <ArrowUpDown className="h-3.5 w-3.5" />
               </div>
             </th>
-            <th className="py-3.5 px-4 text-right">Current / Close</th>
-            <th className="py-3.5 px-4 text-right cursor-pointer hover:text-slate-200" onClick={() => handleSort('pnl')}>
+            <th className="px-4 py-3.5 text-right">Current / Close</th>
+            <th className="cursor-pointer px-4 py-3.5 text-right select-none hover:text-slate-200" onClick={() => handleSort('pnl')}>
               <div className="flex items-center justify-end gap-1.5">
-                Return % <ArrowUpDown className="w-3.5 h-3.5" />
+                Return % <ArrowUpDown className="h-3.5 w-3.5" />
               </div>
             </th>
-            <th className="py-3.5 px-4 text-center">R-Multiple</th>
-            <th className="py-3.5 px-4 text-center">Status</th>
-            <th className="py-3.5 px-4 cursor-pointer hover:text-slate-200" onClick={() => handleSort('signal_date')}>
+            <th className="px-4 py-3.5 text-center">R-Multiple</th>
+            <th className="px-4 py-3.5 text-center">Status</th>
+            <th className="cursor-pointer px-4 py-3.5 select-none hover:text-slate-200" onClick={() => handleSort('signal_date')}>
               <div className="flex items-center gap-1.5">
-                Date <ArrowUpDown className="w-3.5 h-3.5" />
+                Date <ArrowUpDown className="h-3.5 w-3.5" />
               </div>
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800/60 text-slate-200">
+        <tbody className="divide-y divide-slate-700/60 text-slate-200">
           {sortedTrades.map((t) => {
             const currentPrice = t.current_price ?? t.entry_price ?? 0
             const entryPrice = t.entry_price || 0
@@ -80,32 +80,32 @@ export default function TradeTable({ trades = [] }) {
             return (
               <tr
                 key={t.id}
-                className="hover:bg-slate-800/40 transition-colors"
+                className="transition-colors hover:bg-slate-700/40"
               >
-                <td className="py-3 px-4 font-semibold text-slate-100 whitespace-nowrap">
+                <td className="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <span>{t.symbol}</span>
                     {t.signal_count > 1 && (
-                      <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.2 rounded font-mono" title={`Repeated ${t.signal_count} times`}>
+                      <span className="rounded bg-blue-500/20 px-1.5 py-0.5 font-mono text-xs text-blue-400" title={`Repeated ${t.signal_count} times`}>
                         x{t.signal_count}
                       </span>
                     )}
                   </div>
                 </td>
-                <td className="py-3 px-4 text-slate-400 text-xs whitespace-nowrap">{t.sector || '—'}</td>
-                <td className="py-3 px-4 whitespace-nowrap">
+                <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{t.sector || '—'}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
                   <RatingBadge rating={t.rating} score={t.rating_score} />
                 </td>
-                <td className="py-3 px-4 text-right font-medium whitespace-nowrap">{formatCurrency(entryPrice)}</td>
-                <td className="py-3 px-4 text-right font-medium whitespace-nowrap">
+                <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{formatCurrency(entryPrice)}</td>
+                <td className="px-4 py-3 text-right font-medium whitespace-nowrap">
                   {formatCurrency(currentPrice)}
                 </td>
-                <td className={`py-3 px-4 text-right font-semibold whitespace-nowrap ${getPnlColor(pnlPct)}`}>
+                <td className={`px-4 py-3 text-right font-semibold whitespace-nowrap ${getPnlColor(pnlPct)}`}>
                   {formatPercent(pnlPct)}
                 </td>
-                <td className="py-3 px-4 text-center whitespace-nowrap">
+                <td className="px-4 py-3 text-center whitespace-nowrap">
                   {rMultiple != null ? (
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                    <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${
                       rMultiple >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
                     }`}>
                       {rMultiple >= 0 ? `+${rMultiple.toFixed(2)}R` : `${rMultiple.toFixed(2)}R`}
@@ -114,10 +114,10 @@ export default function TradeTable({ trades = [] }) {
                     '—'
                   )}
                 </td>
-                <td className="py-3 px-4 text-center whitespace-nowrap">
+                <td className="px-4 py-3 text-center whitespace-nowrap">
                   <StatusBadge status={t.status} />
                 </td>
-                <td className="py-3 px-4 text-slate-400 text-xs whitespace-nowrap">
+                <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
                   {formatDate(t.signal_date || t.created_at)}
                 </td>
               </tr>

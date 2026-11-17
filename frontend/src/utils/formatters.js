@@ -75,13 +75,13 @@ export function getDaysHeld(signalDate) {
 }
 
 export function getPnlColor(value) {
-  if (value > 0) return 'text-green-500'
-  if (value < 0) return 'text-red-500'
+  if (value > 0) return 'text-emerald-400'
+  if (value < 0) return 'text-rose-400'
   return 'text-slate-400'
 }
 
 export function getPnlBgColor(value) {
-  if (value > 0) return 'bg-green-500/10 text-green-500'
-  if (value < 0) return 'bg-red-500/10 text-red-500'
-  return 'bg-slate-700 text-slate-400'
+  if (value > 0) return 'bg-emerald-500/10 text-emerald-400'
+  if (value < 0) return 'bg-rose-500/10 text-rose-400'
+  return 'bg-slate-800 text-slate-400'
 }

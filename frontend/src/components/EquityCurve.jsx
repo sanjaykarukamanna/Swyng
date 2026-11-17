@@ -10,7 +10,7 @@ export default function EquityCurve({ data = [] }) {
   }))
 
   return (
-    <div className="w-full bg-[#1e293b] p-5 rounded-xl border border-slate-700/60">
+    <div className="w-full rounded-xl border border-slate-700/60 bg-slate-800 p-5 shadow-xs">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-slate-200">Equity Curve (Cumulative P&L)</h3>
         <p className="text-xs text-slate-400">Total realized paper trading profit and loss progression</p>

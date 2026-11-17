@@ -12,24 +12,24 @@ export default function KPICard({ title, value, subtitle, icon: Icon, trend, col
   const iconClasses = colorMap[color] || colorMap.blue
 
   return (
-    <div className="bg-[#1e293b] border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/80 transition-all shadow-sm">
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-xl border border-slate-700/60 bg-slate-800 p-5 shadow-xs transition-colors hover:border-slate-600/80">
+      <div className="mb-3 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</span>
         {Icon && (
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${iconClasses}`}>
-            <Icon className="w-4 h-4" />
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${iconClasses}`}>
+            <Icon className="h-4 w-4" />
           </div>
         )}
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold text-slate-100">{value}</span>
+        <span className="text-2xl font-bold tracking-tight text-slate-100">{value}</span>
         {trend && (
           <span className={`text-xs font-semibold ${trend > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {trend > 0 ? `+${trend}%` : `${trend}%`}
           </span>
         )}
       </div>
-      {subtitle && <p className="text-xs text-slate-400 mt-1.5">{subtitle}</p>}
+      {subtitle && <p className="mt-1.5 text-xs text-slate-400">{subtitle}</p>}
     </div>
   )
 }
