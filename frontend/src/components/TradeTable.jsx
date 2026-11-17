@@ -24,10 +24,8 @@ export default function TradeTable({ trades = [] }) {
     let bVal = b[sortField]
 
     if (sortField === 'pnl') {
-      const aCurr = a.close_price ?? a.current_price ?? a.entry_price ?? 0
-      const bCurr = b.close_price ?? b.current_price ?? b.entry_price ?? 0
-      aVal = a.entry_price > 0 ? (aCurr - a.entry_price) / a.entry_price : 0
-      bVal = b.entry_price > 0 ? (bCurr - b.entry_price) / b.entry_price : 0
+      aVal = a.pnl_pct ?? 0
+      bVal = b.pnl_pct ?? 0
     }
 
     if (aVal == null) return 1
@@ -77,12 +75,10 @@ export default function TradeTable({ trades = [] }) {
         </thead>
         <tbody className="divide-y divide-slate-800/60 text-slate-200">
           {sortedTrades.map((t) => {
-            const isClosed = t.status === 'CLOSED'
-            const currentPrice = isClosed ? t.close_price : (t.current_price ?? t.price_at_signal ?? t.entry_price)
+            const currentPrice = t.current_price ?? t.entry_price ?? 0
             const entryPrice = t.entry_price || 0
-            const pnlPct = entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0
-            const rUnit = entryPrice - (t.stop_loss || 0)
-            const rMultiple = rUnit > 0 ? (currentPrice - entryPrice) / rUnit : null
+            const pnlPct = t.pnl_pct ?? 0
+            const rMultiple = t.r_multiple
 
             return (
               <tr

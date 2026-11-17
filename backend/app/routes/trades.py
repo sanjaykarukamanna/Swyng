@@ -2,6 +2,7 @@
 Trade routes: CRUD and dashboard for trades.
 """
 
+import asyncio
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -15,6 +16,7 @@ from app.models import (
     TradeDetailResponse,
     TradeResponse,
     TradeWithPrice,
+    compute_trade_metrics,
 )
 from app.telegram_bot import get_bot_status, process_digest_text
 from app.yahoo_finance import fetch_price
@@ -33,41 +35,40 @@ def _row_to_dict(row) -> Dict[str, Any]:
 
 @router.get("", response_model=List[TradeResponse])
 async def list_trades(
-    status: Optional[str] = Query(None),
-    symbol: Optional[str] = Query(None),
-    sector: Optional[str] = Query(None),
-    date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None),
-    sort_by: str = Query("created_at"),
-    order: str = Query("desc"),
+    status: Optional[str] = None,
+    symbol: Optional[str] = None,
+    sector: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    sort_by: str = "created_at",
+    order: str = "desc",
 ):
-    """List trades with optional filters."""
+    """List trades with optional filters and pre-computed metrics."""
     db = await get_db()
 
     conditions = []  # type: List[str]
     params = []  # type: List[Any]
 
-    if status:
-        conditions.append("status = ?")
+    if status and isinstance(status, str):
+        conditions.append("t.status = ?")
         params.append(status.upper())
-    if symbol:
-        conditions.append("symbol LIKE ?")
+    if symbol and isinstance(symbol, str):
+        conditions.append("t.symbol LIKE ?")
         params.append(f"%{symbol.upper()}%")
-    if sector:
-        conditions.append("sector LIKE ?")
+    if sector and isinstance(sector, str):
+        conditions.append("t.sector LIKE ?")
         params.append(f"%{sector}%")
-    if date_from:
-        conditions.append("created_at >= ?")
+    if date_from and isinstance(date_from, str):
+        conditions.append("t.signal_date >= ?")
         params.append(date_from)
-    if date_to:
-        conditions.append("created_at <= ?")
+    if date_to and isinstance(date_to, str):
+        conditions.append("t.signal_date <= ?")
         params.append(date_to)
 
     where = ""
     if conditions:
         where = "WHERE " + " AND ".join(conditions)
 
-    # Validate sort_by and order to prevent SQL injection
     allowed_sort = {
         "created_at", "symbol", "sector", "rating_score", "entry_price",
         "status", "signal_date", "updated_at",
@@ -77,16 +78,45 @@ async def list_trades(
     if order.lower() not in ("asc", "desc"):
         order = "desc"
 
-    query = f"SELECT * FROM trades {where} ORDER BY {sort_by} {order}"
+    query = f"""
+        SELECT t.*, ps.price as latest_price
+        FROM trades t
+        LEFT JOIN (
+            SELECT trade_id, price,
+                   ROW_NUMBER() OVER (PARTITION BY trade_id ORDER BY timestamp DESC) as rn
+            FROM price_snapshots
+        ) ps ON t.id = ps.trade_id AND ps.rn = 1
+        {where}
+        ORDER BY t.{sort_by} {order}
+    """
     cursor = await db.execute(query, params)
     rows = await cursor.fetchall()
 
-    return [_row_to_dict(r) for r in rows]
+    results = []
+    for r in rows:
+        trade = _row_to_dict(r)
+        latest_price = trade.pop("latest_price", None)
+        is_closed = trade.get("status") == "CLOSED"
+        price_to_use = trade.get("close_price") if is_closed else (latest_price or trade.get("price_at_signal") or trade.get("entry_price"))
+
+        trade["current_price"] = price_to_use
+        metrics = compute_trade_metrics(
+            trade.get("entry_price"),
+            price_to_use,
+            trade.get("stop_loss"),
+            trade.get("suggested_shares"),
+            trade.get("signal_date"),
+            trade.get("close_date"),
+        )
+        trade.update(metrics)
+        results.append(trade)
+
+    return results
 
 
 @router.get("/active", response_model=List[TradeWithPrice])
 async def list_active_trades():
-    """List active trades with current price info."""
+    """List active trades with current price and unrealized PnL info."""
     db = await get_db()
 
     cursor = await db.execute(
@@ -106,41 +136,19 @@ async def list_active_trades():
     results = []  # type: List[Dict[str, Any]]
     for row in rows:
         trade = _row_to_dict(row)
-        current_price = trade.pop("latest_price", None)
-        entry_price = trade.get("entry_price", 0) or 0
-        stop_loss = trade.get("stop_loss", 0) or 0
-        shares = trade.get("suggested_shares", 0) or 0
-
+        current_price = trade.pop("latest_price", None) or trade.get("price_at_signal") or trade.get("entry_price")
         trade["current_price"] = current_price
 
-        if current_price and entry_price:
-            trade["unrealized_pnl"] = round((current_price - entry_price) * shares, 2)
-            trade["unrealized_pnl_pct"] = round((current_price - entry_price) / entry_price * 100, 2)
-
-            r_unit = entry_price - stop_loss
-            if r_unit > 0:
-                trade["r_multiple"] = round((current_price - entry_price) / r_unit, 2)
-            else:
-                trade["r_multiple"] = None
-        else:
-            trade["unrealized_pnl"] = None
-            trade["unrealized_pnl_pct"] = None
-            trade["r_multiple"] = None
-
-        # Days held
-        signal_date = trade.get("signal_date")
-        if signal_date:
-            try:
-                sd = _try_parse_date(signal_date)
-                if sd:
-                    trade["days_held"] = (datetime.utcnow() - sd).days
-                else:
-                    trade["days_held"] = None
-            except Exception:
-                trade["days_held"] = None
-        else:
-            trade["days_held"] = None
-
+        metrics = compute_trade_metrics(
+            trade.get("entry_price"),
+            current_price,
+            trade.get("stop_loss"),
+            trade.get("suggested_shares"),
+            trade.get("signal_date"),
+        )
+        trade.update(metrics)
+        trade["unrealized_pnl"] = trade["pnl"]
+        trade["unrealized_pnl_pct"] = trade["pnl_pct"]
         results.append(trade)
 
     return results
@@ -148,31 +156,30 @@ async def list_active_trades():
 
 @router.get("/dashboard", response_model=DashboardResponse)
 async def get_dashboard():
-    """Get dashboard summary data."""
+    """Get dashboard summary data with parallel aggregated execution."""
     db = await get_db()
-
-    # Active count
-    cursor = await db.execute("SELECT COUNT(*) FROM trades WHERE status = 'ACTIVE'")
-    row = await cursor.fetchone()
-    active_count = row[0] if row else 0
-
-    # Closed count
-    cursor = await db.execute("SELECT COUNT(*) FROM trades WHERE status = 'CLOSED'")
-    row = await cursor.fetchone()
-    closed_count = row[0] if row else 0
-
-    # Today's signals
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    cursor = await db.execute(
-        "SELECT COUNT(*) FROM trades WHERE DATE(created_at) = ?",
-        (today,),
-    )
-    row = await cursor.fetchone()
-    todays_signals = row[0] if row else 0
 
-    # Analytics
-    total_pnl = await analytics.get_total_pnl_with_unrealized()
-    summary = await analytics.get_summary()
+    async def _fetch_counts():
+        cursor = await db.execute(
+            """SELECT
+                   COALESCE(SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN status = 'CLOSED' THEN 1 ELSE 0 END), 0),
+                   COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN 1 ELSE 0 END), 0)
+               FROM trades""",
+            (today,),
+        )
+        row = await cursor.fetchone()
+        return (row[0], row[1], row[2]) if row else (0, 0, 0)
+
+    (counts, total_pnl, summary, r_multiples) = await asyncio.gather(
+        _fetch_counts(),
+        analytics.get_total_pnl_with_unrealized(),
+        analytics.get_summary(),
+        analytics.get_r_multiples(),
+    )
+
+    active_count, closed_count, todays_signals = counts
 
     return DashboardResponse(
         active_count=active_count,
@@ -180,7 +187,7 @@ async def get_dashboard():
         todays_signals=todays_signals,
         total_pnl=total_pnl,
         win_rate=summary.get("win_rate", 0.0),
-        avg_r_multiple=_avg_r_multiple_from_closed(await analytics.get_r_multiples()),
+        avg_r_multiple=_avg_r_multiple_from_closed(r_multiples),
         avg_holding_days=summary.get("avg_holding_days", 0.0),
         expectancy=summary.get("expectancy", 0.0),
         bot_status=get_bot_status(),
@@ -212,38 +219,23 @@ async def get_trade(trade_id: int):
         latest = trade["price_snapshots"][-1]
         current_price = latest.get("price")
     else:
-        current_price = None
+        current_price = trade.get("price_at_signal") or trade.get("entry_price")
 
-    entry_price = trade.get("entry_price", 0) or 0
-    stop_loss = trade.get("stop_loss", 0) or 0
-    shares = trade.get("suggested_shares", 0) or 0
+    is_closed = trade.get("status") == "CLOSED"
+    effective_price = trade.get("close_price") if is_closed else current_price
+    trade["current_price"] = effective_price
 
-    trade["current_price"] = current_price
-    if current_price and entry_price:
-        trade["unrealized_pnl"] = round((current_price - entry_price) * shares, 2)
-        trade["unrealized_pnl_pct"] = round((current_price - entry_price) / entry_price * 100, 2)
-        r_unit = entry_price - stop_loss
-        if r_unit > 0:
-            trade["r_multiple"] = round((current_price - entry_price) / r_unit, 2)
-        else:
-            trade["r_multiple"] = None
-    else:
-        trade["unrealized_pnl"] = None
-        trade["unrealized_pnl_pct"] = None
-        trade["r_multiple"] = None
-
-    signal_date = trade.get("signal_date")
-    if signal_date:
-        try:
-            sd = _try_parse_date(signal_date)
-            if sd:
-                trade["days_held"] = (datetime.utcnow() - sd).days
-            else:
-                trade["days_held"] = None
-        except Exception:
-            trade["days_held"] = None
-    else:
-        trade["days_held"] = None
+    metrics = compute_trade_metrics(
+        trade.get("entry_price"),
+        effective_price,
+        trade.get("stop_loss"),
+        trade.get("suggested_shares"),
+        trade.get("signal_date"),
+        trade.get("close_date"),
+    )
+    trade.update(metrics)
+    trade["unrealized_pnl"] = trade["pnl"]
+    trade["unrealized_pnl_pct"] = trade["pnl_pct"]
 
     return trade
 
@@ -317,19 +309,3 @@ def _avg_r_multiple_from_closed(r_multiples: List[Dict[str, Any]]) -> float:
         return 0.0
     total = sum(r["r_multiple"] for r in r_multiples)
     return round(total / len(r_multiples), 2)
-
-
-def _try_parse_date(date_str: str) -> Optional[datetime]:
-    """Try to parse a date string."""
-    formats = [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%d",
-        "%A, %b %d, %Y",
-        "%B %d, %Y",
-    ]
-    for fmt in formats:
-        try:
-            return datetime.strptime(date_str.strip(), fmt)
-        except ValueError:
-            pass
-    return None

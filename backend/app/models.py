@@ -31,6 +31,47 @@ class ParsedDigest(BaseModel):
 
 # --- API request / response models ---
 
+def compute_trade_metrics(
+    entry_price: Optional[float],
+    current_or_close_price: Optional[float],
+    stop_loss: Optional[float],
+    shares: Optional[int],
+    signal_date: Optional[str] = None,
+    close_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Canonical calculation for trade PnL, percentage return, R-multiple, and days held."""
+    entry = entry_price or 0.0
+    price = current_or_close_price
+    sh = shares or 0
+
+    pnl = None
+    pnl_pct = None
+    r_multiple = None
+
+    if price is not None and entry > 0:
+        pnl = round((price - entry) * sh, 2)
+        pnl_pct = round((price - entry) / entry * 100, 2)
+        r_unit = entry - (stop_loss or 0.0)
+        if r_unit > 0:
+            r_multiple = round((price - entry) / r_unit, 2)
+
+    days_held = None
+    if signal_date:
+        try:
+            start = datetime.strptime(signal_date[:10], "%Y-%m-%d")
+            end = datetime.strptime(close_date[:10], "%Y-%m-%d") if close_date else datetime.utcnow()
+            days_held = max(0, (end - start).days)
+        except Exception:
+            days_held = None
+
+    return {
+        "pnl": pnl,
+        "pnl_pct": pnl_pct,
+        "r_multiple": r_multiple,
+        "days_held": days_held,
+    }
+
+
 class TradeResponse(BaseModel):
     id: int
     symbol: str
@@ -58,14 +99,16 @@ class TradeResponse(BaseModel):
     first_signal_date: Optional[str] = None
     last_signal_date: Optional[str] = None
     signal_count: Optional[int] = None
+    current_price: Optional[float] = None
+    pnl: Optional[float] = None
+    pnl_pct: Optional[float] = None
+    r_multiple: Optional[float] = None
+    days_held: Optional[int] = None
 
 
 class TradeWithPrice(TradeResponse):
-    current_price: Optional[float] = None
     unrealized_pnl: Optional[float] = None
     unrealized_pnl_pct: Optional[float] = None
-    r_multiple: Optional[float] = None
-    days_held: Optional[int] = None
 
 
 class TradeDetailResponse(TradeWithPrice):

@@ -318,17 +318,11 @@ async def _calculate_max_drawdown() -> float:
     return max_dd
 
 
-def _parse_date(date_str: str) -> Optional[datetime]:
-    """Try to parse a date string in common formats."""
-    formats = [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%d",
-        "%A, %b %d, %Y",
-        "%B %d, %Y",
-    ]
-    for fmt in formats:
-        try:
-            return datetime.strptime(date_str, fmt)
-        except ValueError:
-            continue
-    return None
+def _parse_date(date_str: Optional[str]) -> Optional[datetime]:
+    """Parse canonical ISO date."""
+    if not date_str:
+        return None
+    try:
+        return datetime.strptime(date_str[:10], "%Y-%m-%d")
+    except Exception:
+        return None

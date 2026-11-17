@@ -6,19 +6,15 @@ import StatusBadge from './StatusBadge'
 import { formatCurrency, formatPercent, getPnlColor } from '../utils/formatters'
 
 export default function TradeCard({ trade }) {
-  const currentPrice = trade.current_price ?? trade.price_at_signal ?? trade.entry_price
+  const currentPrice = trade.current_price ?? trade.entry_price ?? 0
   const entryPrice = trade.entry_price || 0
   const stopLoss = trade.stop_loss || 0
   const targetPrice = trade.target_price || 0
-  const pnl = trade.unrealized_pnl ?? ((currentPrice - entryPrice) * (trade.suggested_shares || 0))
-  const pnlPct = trade.unrealized_pnl_pct ?? (entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0)
-
-  // R-Multiple calculation
-  const rUnit = entryPrice - stopLoss
-  const rMultiple = trade.r_multiple ?? (rUnit > 0 ? (currentPrice - entryPrice) / rUnit : 0)
+  const pnl = trade.pnl ?? 0
+  const pnlPct = trade.pnl_pct ?? 0
+  const rMultiple = trade.r_multiple ?? 0
 
   // Progress towards 2R: -1R = 0%, 0R = 33%, 2R = 100%
-  // Normalized between -1 and 2
   const clampedR = Math.max(-1, Math.min(2.5, rMultiple))
   const progressPct = Math.round(((clampedR - (-1)) / (2 - (-1))) * 100)
 

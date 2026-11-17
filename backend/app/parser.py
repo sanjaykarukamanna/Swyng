@@ -7,11 +7,36 @@ entry/SL/target data from a forwarded Telegram digest message.
 
 import logging
 import re
+from datetime import datetime
 from typing import List, Optional
 
 from app.models import ParsedDigest, ParsedStock
 
 logger = logging.getLogger(__name__)
+
+
+def canonicalize_date(raw_date: str) -> str:
+    """Canonicalize any date string into standard ISO YYYY-MM-DD format."""
+    if not raw_date:
+        return datetime.utcnow().strftime("%Y-%m-%d")
+    clean = raw_date.strip()
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", clean):
+        return clean
+    formats = [
+        "%A, %b %d, %Y",
+        "%a, %b %d, %Y",
+        "%B %d, %Y",
+        "%b %d, %Y",
+        "%d %B %Y",
+        "%d %b %Y",
+        "%Y-%m-%d %H:%M:%S",
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(clean, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return clean
 
 
 def parse_digest_message(text: str) -> Optional[ParsedDigest]:
@@ -21,7 +46,8 @@ def parse_digest_message(text: str) -> Optional[ParsedDigest]:
 
     # --- Extract header info ---
     date_match = re.search(r"Date:\s*(.+)", text)
-    date_str = date_match.group(1).strip() if date_match else ""
+    raw_date = date_match.group(1).strip() if date_match else ""
+    date_str = canonicalize_date(raw_date)
 
     regime_match = re.search(r"Market Regime:\s*(.+)", text)
     market_regime = ""
@@ -221,6 +247,7 @@ if __name__ == "__main__":
             print(f"   RSI: {s.rsi} | EMA: {s.ema_trend}")
             print()
 
+        assert result.date == "2026-11-17", f"Expected '2026-11-17', got '{result.date}'"
         assert len(result.stocks) == 7, f"Expected 7 stocks, got {len(result.stocks)}"
         assert result.stocks[0].symbol == "CYIENT.NS"
         assert result.stocks[0].entry_price == 1086.10

@@ -94,17 +94,14 @@ export default function TradeDetail() {
   }
 
   const isClosed = trade.status === 'CLOSED'
-  const currentPrice = isClosed
-    ? trade.close_price
-    : (trade.current_price ?? trade.price_at_signal ?? trade.entry_price)
+  const currentPrice = trade.current_price ?? trade.entry_price ?? 0
   const entryPrice = trade.entry_price || 0
   const stopLoss = trade.stop_loss || 0
   const targetPrice = trade.target_price || 0
-  const pnl = trade.unrealized_pnl ?? ((currentPrice - entryPrice) * (trade.suggested_shares || 0))
-  const pnlPct = trade.unrealized_pnl_pct ?? (entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0)
-
+  const pnl = trade.pnl ?? 0
+  const pnlPct = trade.pnl_pct ?? 0
   const rUnit = entryPrice - stopLoss
-  const rMultiple = rUnit > 0 ? (currentPrice - entryPrice) / rUnit : null
+  const rMultiple = trade.r_multiple
 
   return (
     <div className="space-y-6">

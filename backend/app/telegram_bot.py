@@ -6,7 +6,7 @@ Receives forwarded swing trading digest messages.
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from telegram import Update
 from telegram.ext import (
@@ -71,6 +71,7 @@ async def process_digest_text(text: str) -> dict:
 
     new_count = 0
     skip_count = 0
+    new_trade_entries = []  # type: List[Tuple[int, str, float]]
 
     for stock in digest.stocks:
         # Deduplication: check for existing active trade within 14 days
@@ -127,13 +128,15 @@ async def process_digest_text(text: str) -> dict:
         cursor = await db.execute("SELECT last_insert_rowid()")
         row = await cursor.fetchone()
         trade_id = row[0] if row else None
-
-        # Check entry price against ceiling (fetch current price)
         if trade_id:
-            try:
-                await check_entry_met(trade_id, stock.symbol, stock.entry_ceiling)
-            except Exception as e:
-                logger.warning("Error checking entry for %s: %s", stock.symbol, e)
+            new_trade_entries.append((trade_id, stock.symbol, stock.entry_ceiling))
+
+    # Parallelize entry verification across all new stocks
+    if new_trade_entries:
+        await asyncio.gather(
+            *[check_entry_met(t_id, sym, ceil) for t_id, sym, ceil in new_trade_entries],
+            return_exceptions=True,
+        )
 
     return {
         "success": True,
@@ -183,34 +186,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         logger.warning("Error sending reply: %s", e)
 
 
-def _is_within_days(first_date_str: str, new_date_str: str, days: int) -> bool:
-    """Check if new_date is within N days of first_date."""
-    formats = [
-        "%Y-%m-%d",
-        "%A, %b %d, %Y",
-        "%B %d, %Y",
-        "%Y-%m-%d %H:%M:%S",
-    ]
-
-    first_date = None  # type: Optional[datetime]
-    new_date = None  # type: Optional[datetime]
-
-    for fmt in formats:
-        if first_date is None:
-            try:
-                first_date = datetime.strptime(first_date_str.strip(), fmt)
-            except ValueError:
-                pass
-        if new_date is None:
-            try:
-                new_date = datetime.strptime(new_date_str.strip(), fmt)
-            except ValueError:
-                pass
-
-    if first_date is None or new_date is None:
+def _is_within_days(first_date_str: str, new_date_str: str, days: int = 14) -> bool:
+    """Check if new_date is within N days of first_date using ISO format."""
+    try:
+        d1 = datetime.strptime(first_date_str[:10], "%Y-%m-%d")
+        d2 = datetime.strptime(new_date_str[:10], "%Y-%m-%d")
+        return abs((d2 - d1).days) <= days
+    except Exception:
         return False
-
-    return abs((new_date - first_date).days) <= days
 
 
 async def start_bot() -> None:

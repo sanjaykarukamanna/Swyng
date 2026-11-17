@@ -6,6 +6,8 @@ __pycache__/
 
 # Database
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 
 # Environment
@@ -13,4 +15,5 @@ __pycache__/
 
 # Build outputs
 dist/
+frontend/dist/
 .vite/

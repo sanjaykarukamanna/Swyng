@@ -51,22 +51,27 @@ async def fetch_and_store_price(trade_id: int, symbol: str) -> Optional[float]:
 
 
 async def refresh_active_trade_prices() -> int:
-    """Fetch and store prices for all active trades. Returns count refreshed."""
+    """Fetch and store prices for all active trades in parallel. Returns count refreshed."""
     db = await get_db()
     cursor = await db.execute(
         "SELECT id, symbol FROM trades WHERE status = 'ACTIVE'"
     )
     active_trades = await cursor.fetchall()
+    if not active_trades:
+        return 0
 
-    count = 0
-    for trade in active_trades:
-        trade_id = trade[0]
-        symbol = trade[1]
+    async def _update_single(trade_id: int, symbol: str) -> bool:
         price = await fetch_and_store_price(trade_id, symbol)
         if price is not None:
-            count += 1
             logger.info("Refreshed price for %s: %.2f", symbol, price)
+            return True
+        return False
 
+    results = await asyncio.gather(
+        *[_update_single(trade[0], trade[1]) for trade in active_trades],
+        return_exceptions=True,
+    )
+    count = sum(1 for r in results if r is True)
     logger.info("Refreshed prices for %d/%d active trades", count, len(active_trades))
     return count
 
