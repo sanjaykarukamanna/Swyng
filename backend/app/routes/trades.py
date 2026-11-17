@@ -78,11 +78,7 @@ async def list_trades(
     query = f"""
         SELECT t.*, ps.price as latest_price
         FROM trades t
-        LEFT JOIN (
-            SELECT trade_id, price,
-                   ROW_NUMBER() OVER (PARTITION BY trade_id ORDER BY timestamp DESC) as rn
-            FROM price_snapshots
-        ) ps ON t.id = ps.trade_id AND ps.rn = 1
+        LEFT JOIN latest_price_snapshots ps ON t.id = ps.trade_id
         {where}
         ORDER BY t.{sort_by} {order}
     """
@@ -113,42 +109,12 @@ async def list_trades(
 
 @router.get("/active", response_model=List[TradeWithPrice])
 async def list_active_trades():
-    """List active trades with current price and unrealized PnL info."""
-    db = await get_db()
-
-    cursor = await db.execute(
-        """SELECT t.*,
-                  ps.price as latest_price
-           FROM trades t
-           LEFT JOIN (
-               SELECT trade_id, price,
-                      ROW_NUMBER() OVER (PARTITION BY trade_id ORDER BY timestamp DESC) as rn
-               FROM price_snapshots
-           ) ps ON t.id = ps.trade_id AND ps.rn = 1
-           WHERE t.status = 'ACTIVE'
-           ORDER BY t.created_at DESC"""
-    )
-    rows = await cursor.fetchall()
-
-    results = []  # type: List[Dict[str, Any]]
-    for row in rows:
-        trade = _row_to_dict(row)
-        current_price = trade.pop("latest_price", None) or trade.get("price_at_signal") or trade.get("entry_price")
-        trade["current_price"] = current_price
-
-        metrics = compute_trade_metrics(
-            trade.get("entry_price"),
-            current_price,
-            trade.get("stop_loss"),
-            trade.get("suggested_shares"),
-            trade.get("signal_date"),
-        )
-        trade.update(metrics)
-        trade["unrealized_pnl"] = trade["pnl"]
-        trade["unrealized_pnl_pct"] = trade["pnl_pct"]
-        results.append(trade)
-
-    return results
+    """List active trades with current price and unrealized PnL info by delegating to list_trades."""
+    trades = await list_trades(status="ACTIVE", sort_by="created_at", order="desc")
+    for trade in trades:
+        trade["unrealized_pnl"] = trade.get("pnl")
+        trade["unrealized_pnl_pct"] = trade.get("pnl_pct")
+    return trades
 
 
 @router.get("/dashboard", response_model=DashboardResponse)

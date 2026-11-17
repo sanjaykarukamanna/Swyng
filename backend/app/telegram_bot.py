@@ -18,6 +18,7 @@ from telegram.ext import (
 
 from app.config import settings
 from app.database import get_db
+from app.dates import parse_iso_date
 from app.parser import parse_digest_message
 from app.yahoo_finance import check_entry_met
 
@@ -159,12 +160,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.debug("Ignoring message from chat %s (not %s)", chat_id, settings.telegram_chat_id)
             return
 
-    text = update.message.text or ""
-
-    # Also handle forwarded message text
-    if not text and update.message.forward_date:
-        text = update.message.text or ""
-
+    text = update.message.text or update.message.caption or ""
     if not text:
         return
 
@@ -188,12 +184,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 def _is_within_days(first_date_str: str, new_date_str: str, days: int = 14) -> bool:
     """Check if new_date is within N days of first_date using ISO format."""
-    try:
-        d1 = datetime.strptime(first_date_str[:10], "%Y-%m-%d")
-        d2 = datetime.strptime(new_date_str[:10], "%Y-%m-%d")
+    d1 = parse_iso_date(first_date_str)
+    d2 = parse_iso_date(new_date_str)
+    if d1 and d2:
         return abs((d2 - d1).days) <= days
-    except Exception:
-        return False
+    return False
 
 
 async def start_bot() -> None:
@@ -208,9 +203,9 @@ async def start_bot() -> None:
 
     _application = Application.builder().token(settings.telegram_bot_token).build()
 
-    # Register message handler (handles all text messages, including forwarded)
+    # Register message handler (handles all text messages & photo/document captions)
     _application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+        MessageHandler((filters.TEXT | filters.CAPTION) & ~filters.COMMAND, handle_message)
     )
 
     # Initialize and start polling

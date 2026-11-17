@@ -32,13 +32,19 @@ export default function TradeCard({ trade }) {
           </div>
           <div className="flex items-center gap-1.5">
             <RatingBadge rating={trade.rating} score={trade.rating_score} />
-            {trade.entry_met ? (
+            {trade.entry_met === 1 && (
               <span className="inline-flex items-center gap-1 rounded border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-400">
                 <CheckCircle2 className="h-3 w-3" /> Entry Met
               </span>
-            ) : (
+            )}
+            {trade.entry_met === 0 && (
+              <span className="inline-flex items-center gap-1 rounded border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-medium text-rose-400">
+                <XCircle className="h-3 w-3" /> Ceiling Exceeded
+              </span>
+            )}
+            {trade.entry_met == null && (
               <span className="inline-flex items-center gap-1 rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-400">
-                <XCircle className="h-3 w-3" /> Entry Missed
+                <Clock className="h-3 w-3" /> Pending Check
               </span>
             )}
           </div>

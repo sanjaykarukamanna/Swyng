@@ -3,6 +3,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.dates import parse_iso_date
+
 
 # --- Parsed signal models ---
 
@@ -57,12 +59,11 @@ def compute_trade_metrics(
 
     days_held = None
     if signal_date:
-        try:
-            start = datetime.strptime(signal_date[:10], "%Y-%m-%d")
-            end = datetime.strptime(close_date[:10], "%Y-%m-%d") if close_date else datetime.utcnow()
-            days_held = max(0, (end - start).days)
-        except Exception:
-            days_held = None
+        start = parse_iso_date(signal_date)
+        if start:
+            end = parse_iso_date(close_date) if close_date else datetime.utcnow()
+            if end:
+                days_held = max(0, (end - start).days)
 
     return {
         "pnl": pnl,

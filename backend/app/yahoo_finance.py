@@ -31,7 +31,7 @@ def _fetch_price_sync(symbol: str) -> Optional[float]:
 
 async def fetch_price(symbol: str) -> Optional[float]:
     """Async wrapper: fetch the latest price for a symbol."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _fetch_price_sync, symbol)
 
 

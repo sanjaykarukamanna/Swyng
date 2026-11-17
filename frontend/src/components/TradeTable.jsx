@@ -86,7 +86,7 @@ export default function TradeTable({ trades = [] }) {
                   <div className="flex items-center gap-1.5">
                     <span>{t.symbol}</span>
                     {t.signal_count > 1 && (
-                      <span className="rounded bg-blue-500/20 px-1 py-0.2 font-mono text-[10px] text-blue-400" title={`Repeated ${t.signal_count} times`}>
+                      <span className="rounded bg-blue-500/20 px-1 py-0.5 font-mono text-[10px] text-blue-400" title={`Repeated ${t.signal_count} times`}>
                         x{t.signal_count}
                       </span>
                     )}

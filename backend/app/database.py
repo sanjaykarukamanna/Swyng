@@ -84,5 +84,16 @@ async def init_db() -> None:
         )
     """)
 
+    await db.execute("""
+        CREATE VIEW IF NOT EXISTS latest_price_snapshots AS
+        SELECT ps.trade_id, ps.symbol, ps.price, ps.timestamp
+        FROM price_snapshots ps
+        INNER JOIN (
+            SELECT trade_id, MAX(id) AS max_id
+            FROM price_snapshots
+            GROUP BY trade_id
+        ) latest ON ps.id = latest.max_id
+    """)
+
     await db.commit()
-    logger.info("Database tables initialized")
+    logger.info("Database tables and views initialized")
