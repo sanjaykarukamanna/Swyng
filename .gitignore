@@ -1,20 +1,30 @@
 # Dependencies
 node_modules/
+*/node_modules/
 venv/
+*/venv/
+.venv/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Database
+# Database & Data
 *.db
 *.db-shm
 *.db-wal
 *.sqlite3
 data/
 
-# Environment
+# Environment & local secrets
 .env
+.env.*
+!.env.example
+*/.env
 
-# Build outputs
+# Build outputs & caches
 dist/
-frontend/dist/
+*/dist/
 .vite/
+.pytest_cache/
+.DS_Store
