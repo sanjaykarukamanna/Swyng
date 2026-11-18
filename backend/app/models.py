@@ -31,6 +31,11 @@ class ParsedDigest(BaseModel):
     raw_message: str
 
 
+class CloseTradeRequest(BaseModel):
+    close_price: Optional[float] = None
+    close_reason: Optional[str] = "MANUAL"
+
+
 # --- API request / response models ---
 
 def compute_trade_metrics(

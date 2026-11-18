@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import {
   TrendingUp,
   Activity,
@@ -13,14 +12,13 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import KPICard from '../components/KPICard'
-import TradeCard from '../components/TradeCard'
-import EmptyState from '../components/EmptyState'
-import { getDashboardSummary, getActiveTrades, refreshPrices } from '../services/api'
+import TradesLedger from '../components/TradesLedger'
+import { getDashboardSummary, getTrades, refreshPrices } from '../services/api'
 import { formatCurrency, formatRelativeDate } from '../utils/formatters'
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null)
-  const [activeTrades, setActiveTrades] = useState([])
+  const [trades, setTrades] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
@@ -28,12 +26,12 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       setError(null)
-      const [sumRes, actRes] = await Promise.all([
+      const [sumRes, tradesRes] = await Promise.all([
         getDashboardSummary(),
-        getActiveTrades(),
+        getTrades({ sort_by: 'created_at', order: 'desc' }),
       ])
       setSummary(sumRes.data)
-      setActiveTrades(actRes.data)
+      setTrades(tradesRes.data)
     } catch (err) {
       console.error(err)
       setError('Failed to load dashboard data. Ensure backend is running.')
@@ -44,7 +42,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData()
-    // Auto-refresh active trade data every 60s
+    // Auto-refresh trade data every 60s
     const timer = setInterval(() => {
       fetchData()
     }, 60000)
@@ -98,6 +96,7 @@ export default function Dashboard() {
             </span>
           </div>
 
+          {/* Refresh Action */}
           <button
             onClick={handleManualRefresh}
             disabled={refreshing}
@@ -166,61 +165,44 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Active Trades Grid */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-slate-100">Active Positions</h2>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
-              {activeTrades.length}
-            </span>
-          </div>
-          <Link
-            to="/trades?status=ACTIVE"
-            className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
-          >
-            View in table →
-          </Link>
-        </div>
-
-        {activeTrades.length === 0 ? (
-          <EmptyState
-            title="No Active Positions"
-            description="Forward a swing trading digest message to your Telegram bot to automatically generate paper trades."
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activeTrades.map((trade) => (
-              <TradeCard key={trade.id} trade={trade} />
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Today's Digest summary banner */}
       {summary?.todays_signals > 0 && (
-        <div className="flex items-center justify-between rounded-xl border border-blue-500/30 bg-slate-800 p-4 shadow-xs">
+        <div className="flex items-center justify-between rounded-xl border border-blue-500/30 bg-slate-800 p-3.5 shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+              <CheckCircle2 className="h-4 w-4" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-slate-200">
+              <div className="text-xs font-semibold text-slate-200">
                 {summary.todays_signals} Candidates Shortlisted Today
               </div>
-              <div className="text-xs text-slate-400">
+              <div className="text-[11px] text-slate-400">
                 Last bot activity: {formatRelativeDate(botStatus.last_message_at)}
               </div>
             </div>
           </div>
-          <Link
-            to="/trades"
-            className="rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            Review All Picks
-          </Link>
+          <span className="rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-300">
+            {trades.length} Total Registered
+          </span>
         </div>
       )}
+
+      {/* Unified High-Density Trades Ledger */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-100">Trades Ledger & Positions</h2>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
+              {trades.length}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Click any row to expand risk breakdown & exit trade
+          </p>
+        </div>
+
+        <TradesLedger trades={trades} onTradeUpdated={fetchData} />
+      </div>
     </div>
   )
 }

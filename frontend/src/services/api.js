@@ -20,6 +20,8 @@ api.interceptors.response.use(
 export const getTrades = (params = {}) => api.get('/trades', { params })
 export const getActiveTrades = () => api.get('/trades/active')
 export const getDashboardSummary = () => api.get('/trades/dashboard')
+export const closeTrade = (id, data = {}) => api.put(`/trades/${id}/close`, data)
+export const reopenTrade = (id) => api.put(`/trades/${id}/reopen`)
 
 // Analytics
 export const getAnalyticsSummary = () => api.get('/analytics/summary')

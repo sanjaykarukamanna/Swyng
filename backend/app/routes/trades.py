@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.database import get_db
 from app.models import (
+    CloseTradeRequest,
     DashboardResponse,
     TradeResponse,
     TradeWithPrice,
@@ -166,6 +167,118 @@ async def ingest_digest_text(body: Dict[str, str]):
     res = await process_digest_text(text)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("detail", "Failed to parse digest"))
+    return res
+
+
+@router.put("/{trade_id}/close", response_model=TradeResponse)
+async def close_trade(trade_id: int, body: Optional[CloseTradeRequest] = None):
+    """Close an active trade manually or with a specified price and reason."""
+    db = await get_db()
+    cursor = await db.execute("SELECT * FROM trades WHERE id = ?", (trade_id,))
+    trade_row = await cursor.fetchone()
+    if not trade_row:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    trade = _row_to_dict(trade_row)
+
+    close_price = body.close_price if body else None
+    if close_price is None:
+        snap_cursor = await db.execute(
+            "SELECT price FROM latest_price_snapshots WHERE trade_id = ?", (trade_id,)
+        )
+        snap_row = await snap_cursor.fetchone()
+        if snap_row and snap_row[0]:
+            close_price = snap_row[0]
+        else:
+            close_price = trade.get("price_at_signal") or trade.get("entry_price") or 0.0
+
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    close_reason = (body.close_reason if body and body.close_reason else "MANUAL").upper()
+
+    await db.execute(
+        """
+        UPDATE trades
+        SET status = 'CLOSED',
+            close_price = ?,
+            close_date = ?,
+            close_reason = ?,
+            updated_at = datetime('now')
+        WHERE id = ?
+        """,
+        (close_price, today, close_reason, trade_id),
+    )
+    await db.commit()
+
+    cursor = await db.execute(
+        """
+        SELECT t.*, ps.price as latest_price
+        FROM trades t
+        LEFT JOIN latest_price_snapshots ps ON t.id = ps.trade_id
+        WHERE t.id = ?
+        """,
+        (trade_id,),
+    )
+    updated_row = await cursor.fetchone()
+    res = _row_to_dict(updated_row)
+    res.pop("latest_price", None)
+    res["current_price"] = res.get("close_price")
+    metrics = compute_trade_metrics(
+        res.get("entry_price"),
+        res.get("close_price"),
+        res.get("stop_loss"),
+        res.get("suggested_shares"),
+        res.get("signal_date"),
+        res.get("close_date"),
+    )
+    res.update(metrics)
+    return res
+
+
+@router.put("/{trade_id}/reopen", response_model=TradeResponse)
+async def reopen_trade(trade_id: int):
+    """Reopen a closed trade back to ACTIVE."""
+    db = await get_db()
+    cursor = await db.execute("SELECT * FROM trades WHERE id = ?", (trade_id,))
+    trade_row = await cursor.fetchone()
+    if not trade_row:
+        raise HTTPException(status_code=404, detail="Trade not found")
+
+    await db.execute(
+        """
+        UPDATE trades
+        SET status = 'ACTIVE',
+            close_price = NULL,
+            close_date = NULL,
+            close_reason = NULL,
+            updated_at = datetime('now')
+        WHERE id = ?
+        """,
+        (trade_id,),
+    )
+    await db.commit()
+
+    cursor = await db.execute(
+        """
+        SELECT t.*, ps.price as latest_price
+        FROM trades t
+        LEFT JOIN latest_price_snapshots ps ON t.id = ps.trade_id
+        WHERE t.id = ?
+        """,
+        (trade_id,),
+    )
+    updated_row = await cursor.fetchone()
+    res = _row_to_dict(updated_row)
+    latest_price = res.pop("latest_price", None)
+    price_to_use = latest_price or res.get("price_at_signal") or res.get("entry_price")
+    res["current_price"] = price_to_use
+    metrics = compute_trade_metrics(
+        res.get("entry_price"),
+        price_to_use,
+        res.get("stop_loss"),
+        res.get("suggested_shares"),
+        res.get("signal_date"),
+        None,
+    )
+    res.update(metrics)
     return res
 
 
